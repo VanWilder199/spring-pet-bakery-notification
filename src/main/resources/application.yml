@@ -1,0 +1,32 @@
+spring:
+  application:
+    name: notification-service
+  mail:
+    host: smtp.yandex.ru
+    port: 465
+    username: ${vault_email_username]
+    password: ${vault_email_password}
+    protocol: smtps
+    properties:
+      mail:
+        smtps:
+          auth: true
+          ssl:
+            enable: true
+          starttls:
+            enable: false
+          connectiontimeout: 15000
+          timeout: 15000
+          writetimeout: 15000
+        debug: true
+
+logging:
+  level:
+    org.springframework.mail: DEBUG
+    javax.mail: DEBUG
+    com.sun.mail: DEBUG
+
+server:
+  port: 8081
+
+

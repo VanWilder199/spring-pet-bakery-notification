@@ -29,6 +29,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web:3.3.4")
     implementation("org.springframework.boot:spring-boot-starter-validation:3.3.4")
     implementation("org.springframework.kafka:spring-kafka:3.2.4")
+    implementation("org.springframework.boot:spring-boot-starter-mail:3.3.4")
     compileOnly("org.projectlombok:lombok:1.18.34")
     annotationProcessor("org.projectlombok:lombok:1.18.34")
 
