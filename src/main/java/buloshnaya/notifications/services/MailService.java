@@ -21,17 +21,25 @@ public class MailService {
         this.fromEmail = fromEmail;
     }
 
-    public void sendOrderNotification(OrderNotification order) throws MessagingException {
+    public void sendOrderNotification(OrderNotification order) {
         NotificationType type = order.notificationType();
         String subject = type.getSubjectPrefix() + " #" + order.orderId();
         String html = buildOrderHtml(order);
 
         MimeMessage message = mailSender.createMimeMessage();
-        MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-        helper.setFrom(fromEmail);
-        helper.setTo(order.email());
-        helper.setSubject(subject);
-        helper.setText(html, true);
+        MimeMessageHelper helper = null;
+
+        try {
+            helper = new MimeMessageHelper(message, true, "UTF-8");
+
+            helper.setFrom(fromEmail);
+            helper.setTo(order.email());
+            helper.setSubject(subject);
+            helper.setText(html, true);
+        } catch (MessagingException e) {
+            throw new RuntimeException(e);
+        }
+
 
         mailSender.send(message);
     }
