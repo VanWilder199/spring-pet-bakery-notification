@@ -2,9 +2,13 @@ spring:
   application:
     name: notification-service
   datasource:
-    url: jdbc:postgresql://localhost:5432/postgres
+    url: jdbc:postgresql://localhost:5432/notification
     username: postgres
     password: postgres
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
   flyway:
     enabled: true
     baseline-on-migrate: true

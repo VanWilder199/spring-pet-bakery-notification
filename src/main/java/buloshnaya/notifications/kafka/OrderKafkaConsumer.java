@@ -4,6 +4,7 @@ import buloshnaya.notifications.dto.OrderNotification;
 import buloshnaya.notifications.entity.NotificationOutboxEntity;
 import buloshnaya.notifications.repository.NotificationOutboxRepository;
 import buloshnaya.notifications.services.MailService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,16 +19,28 @@ public class OrderKafkaConsumer {
 
     private final MailService mailService;
     private final NotificationOutboxRepository notificationOutboxRepository;
+    private final ObjectMapper objectMapper;
 
-    public OrderKafkaConsumer(MailService mailService, NotificationOutboxRepository notificationOutboxRepository) {
+    public OrderKafkaConsumer(MailService mailService,
+                               NotificationOutboxRepository notificationOutboxRepository,
+                               ObjectMapper objectMapper) {
         this.mailService = mailService;
         this.notificationOutboxRepository = notificationOutboxRepository;
+        this.objectMapper = objectMapper;
     }
 
     @KafkaListener(topics = "order-notification-topic", groupId = "notification-group")
-    public void consumeOrderNotification(ConsumerRecord<String, OrderNotification> record,
+    public void consumeOrderNotification(ConsumerRecord<String, String> record,
                                          Acknowledgment acknowledgment) {
-        OrderNotification notification = record.value();
+        OrderNotification notification;
+        try {
+            notification = objectMapper.readValue(record.value(), OrderNotification.class);
+        } catch (Exception e) {
+            logger.error("Failed to deserialize notification: {}", e.getMessage());
+            acknowledgment.acknowledge();
+            return;
+        }
+
         String orderId = notification.orderId();
         String type = notification.notificationType().name();
 
@@ -56,7 +69,7 @@ public class OrderKafkaConsumer {
         acknowledgment.acknowledge();
     }
 
-    private NotificationOutboxEntity buildOutboxEntity(ConsumerRecord<String, OrderNotification> record,
+    private NotificationOutboxEntity buildOutboxEntity(ConsumerRecord<String, String> record,
                                                        OrderNotification notification) {
         NotificationOutboxEntity entity = new NotificationOutboxEntity();
         entity.setOrderId(notification.orderId());

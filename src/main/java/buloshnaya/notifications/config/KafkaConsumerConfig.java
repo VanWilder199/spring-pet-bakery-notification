@@ -1,7 +1,5 @@
 package buloshnaya.notifications.config;
 
-import buloshnaya.notifications.dto.OrderNotification;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
@@ -15,8 +13,6 @@ import org.springframework.kafka.listener.ContainerProperties;
 import org.springframework.kafka.listener.DefaultErrorHandler;
 import org.springframework.kafka.listener.DeadLetterPublishingRecoverer;
 import org.springframework.kafka.support.serializer.DeserializationException;
-import org.springframework.kafka.support.serializer.JsonDeserializer;
-import org.springframework.kafka.support.serializer.JsonSerializer;
 import org.springframework.util.backoff.FixedBackOff;
 
 import jakarta.validation.ValidationException;
@@ -30,42 +26,31 @@ public class KafkaConsumerConfig {
     private static final String BOOTSTRAP_SERVERS = "localhost:9092";
 
     @Bean
-    public ConsumerFactory<String, OrderNotification> consumerFactory(
-            ObjectMapper objectMapper
-    ) {
+    public ConsumerFactory<String, String> consumerFactory() {
         Map<String, Object> configProperties = new HashMap<>();
         configProperties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, BOOTSTRAP_SERVERS);
         configProperties.put(ConsumerConfig.GROUP_ID_CONFIG, "notification-group");
 
-        JsonDeserializer<OrderNotification> jsonDeserializer = new JsonDeserializer<>(objectMapper) {
-        };
-
-        return new DefaultKafkaConsumerFactory<>(configProperties, new StringDeserializer(), jsonDeserializer);
+        return new DefaultKafkaConsumerFactory<>(configProperties, new StringDeserializer(), new StringDeserializer());
     }
 
     @Bean
-    public ProducerFactory<String, OrderNotification> producerFactory(
-            ObjectMapper objectMapper
-    ) {
+    public ProducerFactory<String, String> producerFactory() {
         Map<String, Object> configProperties = new HashMap<>();
         configProperties.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, BOOTSTRAP_SERVERS);
 
-        return new DefaultKafkaProducerFactory<>(
-                configProperties,
-                new StringSerializer(),
-                new JsonSerializer<>(objectMapper)
-        );
+        return new DefaultKafkaProducerFactory<>(configProperties, new StringSerializer(), new StringSerializer());
     }
 
     @Bean
-    public KafkaTemplate<String, OrderNotification> kafkaTemplate(
-            ProducerFactory<String, OrderNotification> producerFactory
+    public KafkaTemplate<String, String> kafkaTemplate(
+            ProducerFactory<String, String> producerFactory
     ) {
         return new KafkaTemplate<>(producerFactory);
     }
 
     @Bean
-    public DefaultErrorHandler errorHandler(KafkaTemplate<String, OrderNotification> kafkaTemplate) {
+    public DefaultErrorHandler errorHandler(KafkaTemplate<String, String> kafkaTemplate) {
         var recoverer = new DeadLetterPublishingRecoverer(kafkaTemplate);
         var handler = new DefaultErrorHandler(recoverer, new FixedBackOff(1000L, 2));
         handler.addNotRetryableExceptions(DeserializationException.class, ValidationException.class);
@@ -73,11 +58,11 @@ public class KafkaConsumerConfig {
     }
 
     @Bean
-    public ConcurrentKafkaListenerContainerFactory<String, OrderNotification> kafkaListenerContainerFactory(
-            ConsumerFactory<String, OrderNotification> consumerFactory,
+    public ConcurrentKafkaListenerContainerFactory<String, String> kafkaListenerContainerFactory(
+            ConsumerFactory<String, String> consumerFactory,
             DefaultErrorHandler errorHandler
     ) {
-        var containerFactory = new ConcurrentKafkaListenerContainerFactory<String, OrderNotification>();
+        var containerFactory = new ConcurrentKafkaListenerContainerFactory<String, String>();
         containerFactory.setConcurrency(4);
         containerFactory.setConsumerFactory(consumerFactory);
         containerFactory.setCommonErrorHandler(errorHandler);
